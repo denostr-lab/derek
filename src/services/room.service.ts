@@ -53,7 +53,7 @@ export const addSubscriptionsUnread = async (uids: string[], rid: string) => {
 }
 
 export const findSubscriptionsByRidAndU = async (uids: string[], rid: string) => {
-  return subscriptionModel.find({ uids: { $in: uids }, rid });
+  return subscriptionModel.find({ u: { $in: uids }, rid });
 }
 
 export const updateSubscription = async (u: string, rid: string, modifier: ModifierSubscription) => {

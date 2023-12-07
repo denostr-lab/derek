@@ -3,6 +3,10 @@ import { CREATE_SUB_QUEUE_NAME, UPDATE_SUB_QUEUE_NAME, redisConnection } from '@
 import { createSubscriptions, updateRoomByRid, addSubscriptionsUnread } from '@/services/room.service';
 import { addDataToStream } from '@/utils/connectRedis';
 import { Worker, Job } from 'bullmq';
+import config from 'config';
+
+const BULLMQ_REDIS_REMOVE_COMPLETE_COUNT = parseInt(config.get("bullMQRedisRemoveCompleteCount"), 10) as number || 5000;
+const BULLMQ_REDIS_REMOVE_FAIL_COUNT = parseInt(config.get("bullMQRedisRemoveFailCount"), 10) as number|| 5000;
 
 /**
  * @summary 处理创建房间是和修改房间相关行为的worker
@@ -33,8 +37,8 @@ export const bullWorker = new Worker(CREATE_SUB_QUEUE_NAME, async (job: any)=> {
 }, { 
   autorun: false,
   connection: redisConnection,
-  removeOnComplete: { count: 1000 },
-  // removeOnFail: { count: 1000 },
+  removeOnComplete: { count: BULLMQ_REDIS_REMOVE_COMPLETE_COUNT },
+  removeOnFail: { count: BULLMQ_REDIS_REMOVE_FAIL_COUNT },
 });
 
 
@@ -65,7 +69,7 @@ export const updateSubWorker = new Worker(UPDATE_SUB_QUEUE_NAME, async (job: any
       lastMessageTs: data.lastMessage.created_at,
       ts: new Date()
     })
-    console.info(`updateSubWorker data?.uids.lenth: ${data?.uids.length}`);
+    console.info(`updateSubWorker data?.uids.lenth: ${data?.uids.length}`, 'rid: ', data?.rid);
     if (data?.uids.length > 0) {
       const newSubscriptionList = await addSubscriptionsUnread(data?.uids, data?.rid);
       const items = newSubscriptionList.map((item: Subscription) => ({ p: item.u, rid: item.rid, unread: item.unread }));
@@ -79,8 +83,8 @@ export const updateSubWorker = new Worker(UPDATE_SUB_QUEUE_NAME, async (job: any
 }, { 
   autorun: false,
   connection: redisConnection,
-  removeOnComplete: { count: 1000 },
-  // removeOnFail: { count: 1000 },
+  removeOnComplete: { count: BULLMQ_REDIS_REMOVE_COMPLETE_COUNT },
+  removeOnFail: { count: BULLMQ_REDIS_REMOVE_FAIL_COUNT },
 });
 
 

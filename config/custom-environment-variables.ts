@@ -6,6 +6,12 @@ export default {
   refreshTokenPrivateKey: 'REFRESH_TOKEN_PRIVATE_KEY',
   refreshTokenPublicKey: 'REFRESH_TOKEN_PUBLIC_KEY',
   mongoUrl: 'MONGO_URL',
-  redisUrl: 'REDIS_URL',
-  port: 'PORT'
+  port: 'PORT',
+  redisPort: 'REDIS_PORT',
+  redisHost: 'REDIS_HOST',
+  bullMQRedisDB: 'BULLMQ_REDIS_DB',
+  redisDB: 'REDIS_DB',
+  redisMaxStreamLength: 'REDIS_MAX_STREAM_LENGTH',
+  bullMQRedisRemoveCompleteCount:'BULLMQ_REDIS_REMOVE_COMPLETE_COUNT',
+  bullMQRedisRemoveFailCount: 'BULLMQ_REDIS_REMOVE_FAIL_COUNT',
 };

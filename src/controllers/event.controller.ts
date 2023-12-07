@@ -11,17 +11,11 @@ import {
   findBySubscriptionFilter,
   deleteEventsByIdAnyPubKey,
 } from "@/services/event.service";
-import { createRoom, findDirectRoomByRid, findRoomByRid, replaceRoomByRid, findSubscriptionsByRidAndU } from "@/services/room.service";
+import { createRoom, findDirectRoomByRid, findRoomByRid, replaceRoomByRid } from "@/services/room.service";
 import { CREATE_SUB_QUEUE_NAME } from "@/bullMQ/createQueue";
 import { addJob } from '@/bullMQ/addJob';
 import { Room } from '@/types';
 import { normalizeDirectRoomAndSubData, normalizeGroupRoomAndSubData } from '@/utils/normalizeData';
-
-const kindOfRoomType = {
-  [4]: "d",
-  [40]: "c",
-  [41]: "c",
-}
 
 export const findEventsHandler = async (
   req: Request<{}, {}, eventFiltersInput>,
@@ -128,6 +122,13 @@ async function handleGroupMessage(body: eventInput) {
   addJob(updateSubQueue, UPDATE_SUB_QUEUE_NAME, { uids, rid, lastMessage: input });
 }
 
+const handlers: Record<number, (args: eventInput) => void> =  {
+  4: (args: eventInput) => handleKind4Room(args),
+  40: (args: eventInput) => handleCreateRoom(args),
+  41: (args: eventInput) => handleUpdateRoom(args),
+  42: (args: eventInput) => handleGroupMessage(args)
+}
+
 export const saveEventHandler = async (
   req: Request<{}, {}, eventInput>,
   res: Response,
@@ -142,28 +143,18 @@ export const saveEventHandler = async (
       (kind >= 10000 && kind < 20000) ||
       (kind >= 30000 && kind <= 40000)
     ) {
-
-      if (kind === 41) {
-        await handleUpdateRoom(req.body);
+      
+      if (handlers.hasOwnProperty(kind)) {
+        const eventHandler = handlers[kind];
+        await eventHandler(req.body);
       }
 
       handleRes = await replaceEvent(req.body.event);
     } else {
 
-      // 创建私聊房间 && 私聊发送消息
-      if (kind === 4) {
-        await handleKind4Room(req.body)
-      }
-
-      // 创建群聊房间
-      if (kind === 40) {
-        await handleCreateRoom(req.body)
-      }
-
-
-      // 向群聊发送消息
-      if (kind === 42) {
-        await handleGroupMessage(req.body)
+      if (handlers.hasOwnProperty(kind)) {
+        const eventHandler = handlers[kind];
+        await eventHandler(req.body);
       }
 
       handleRes = await insertEvent(req.body.event);
