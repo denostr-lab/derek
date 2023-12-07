@@ -58,7 +58,7 @@ export type ModifierSubscription = {
 }
 
 export type Pagination = {
-  pageNo: number;
+  page: number;
   pageSize: number;
   sortOrder?: "desc" | "asc";
   sortBy?: string;

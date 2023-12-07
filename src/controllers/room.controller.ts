@@ -36,11 +36,11 @@ export const roomsHandler = async (
 ) => {
   try {
     const { pubkey } = req.params;
-    let { pageNo = 0, pageSize = 10 } = req.query;
-    pageNo = parseInt(req.query.pageNo, 10) || 0;
+    let { page = 0, pageSize = 10 } = req.query;
+    page = parseInt(req.query.page, 10) || 0;
     pageSize = parseInt(req.query.pageSize, 10) || 10;
     const list = await findSubscriptionAggregate(pubkey, {
-      pageNo,
+      page,
       pageSize,
     });
 
@@ -48,7 +48,7 @@ export const roomsHandler = async (
       status: "success",
       data: {
         list,
-        pageNo
+        page
       },
     });
   } catch (err: any) {

@@ -17,7 +17,7 @@ export const readRoomMessageSchema = object({
 export const roomListSchema = object({
   ...params,
   query: object({
-    pageNo: number().optional(),
+    page: number().optional(),
     pageSize: number().optional(),
   }),
 })

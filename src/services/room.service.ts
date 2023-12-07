@@ -66,7 +66,7 @@ export const updateSubscription = async (u: string, rid: string, modifier: Modif
 }
 
 export const findSubscriptions = async (u: string, pagination: Pagination) => {
-  const skip = pagination.pageSize * pagination.pageNo;
+  const skip = pagination.pageSize * pagination.page;
   let sort = {}
   if (pagination.sortBy) {
     sort = { sort: { [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 } }
@@ -75,7 +75,7 @@ export const findSubscriptions = async (u: string, pagination: Pagination) => {
 }
 
 export const findSubscriptionAggregate = async (u: string, pagination: Pagination) => {
-  const skip = pagination.pageSize * pagination.pageNo;
+  const skip = pagination.pageSize * pagination.page;
   const limit = pagination.pageSize;
   return subscriptionModel.aggregate([
     {
