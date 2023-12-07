@@ -67,3 +67,15 @@ export type Pagination = {
 export interface SubscriptionObj {
   [rid: string]: Subscription;
 }
+
+export type RoomList = {
+  _id: string;
+  rid: stirng;
+  u: string;
+  t: "c" | "d" | "p" | "l" | "v";
+  unread: number;
+  archived: boolean;
+  ts: Date;
+  __v: number;
+  roomData: Room;
+}

@@ -15,7 +15,7 @@ import { createRoom, findDirectRoomByRid, findRoomByRid, replaceRoomByRid } from
 import { CREATE_SUB_QUEUE_NAME } from "@/bullMQ/createQueue";
 import { addJob } from '@/bullMQ/addJob';
 import { Room } from '@/types';
-import { normalizeDirectRoomAndSubData, normalizeGroupRoomAndSubData } from '@/utils/normalizeData';
+import { generateDirectRid, normalizeDirectRoomAndSubData, normalizeGroupRoomAndSubData } from '@/utils/normalizeData';
 
 export const findEventsHandler = async (
   req: Request<{}, {}, eventFiltersInput>,
@@ -46,9 +46,10 @@ async function handleKind4Room(body: eventInput) {
   console.info(`handleKind4Room kind: ${input.kind}, tagItem:`, tagItem, "tags: ", tags);
   const inputPubkey = input.pubkey;
   const recipientPubkey = tagItem[1] as string;
-  const rid = `${inputPubkey}${recipientPubkey}`;
-  const existRoom = await findDirectRoomByRid([`${inputPubkey}${recipientPubkey}`, `${recipientPubkey}${inputPubkey}`], "d");
-  console.info(`findDirectRoomByRid rid: ${inputPubkey}${recipientPubkey} or ${recipientPubkey}${inputPubkey} existRoom: `, existRoom);
+
+  const rid = generateDirectRid(inputPubkey, recipientPubkey);
+  const existRoom = await findDirectRoomByRid(rid, "d");
+  console.info(`findDirectRoomByRid rid: ${rid} existRoom: `, existRoom);
   const { room, subscriptions } = normalizeDirectRoomAndSubData(body, rid);
   if (!existRoom) {
     await createRoom(room);

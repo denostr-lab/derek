@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { readRoomMessageInput } from "@/schema/room.schema";
-import { findRoomByRidList, findSubscriptionAggregate, findSubscriptions, updateSubscription } from "@/services/room.service";
-import { Subscription, SubscriptionObj } from "@/types";
-import { roomConverter } from "@/converter/roomConverter";
+import { findSubscriptionAggregate, updateSubscription } from "@/services/room.service";
+import { roomListConverter } from "@/converter/roomConverter";
 
 export const readRoomMessageHandler = async (
   req: Request<{}, {}, readRoomMessageInput>,
@@ -36,13 +35,16 @@ export const roomsHandler = async (
 ) => {
   try {
     const { pubkey } = req.params;
-    let { page = 0, pageSize = 10 } = req.query;
-    page = parseInt(req.query.page, 10) || 0;
-    pageSize = parseInt(req.query.pageSize, 10) || 10;
-    const list = await findSubscriptionAggregate(pubkey, {
+    let { page = 0, pageSize = 10, since } = req.query;
+    page = parseInt(page, 10) || 0;
+    pageSize = parseInt(pageSize, 10) || 10;
+    since = since > 0 ? parseInt(since, 10) : 0;
+    let list = await findSubscriptionAggregate(pubkey, since, {
       page,
       pageSize,
     });
+
+    list = roomListConverter(list);
 
     res.status(200).json({
       status: "success",

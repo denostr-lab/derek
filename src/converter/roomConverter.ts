@@ -1,10 +1,9 @@
-import { Room, SubscriptionObj } from '@/types';
-export function roomConverter(roomList: Room[], subscriptionObj: SubscriptionObj) {
-  roomList.map((room: Room) => {
-    const subscription = subscriptionObj[room.rid];
-    return {
-      ...room,
-      subscription
-    }
+import { RoomList } from '@/types';
+export function roomListConverter(roomList: RoomList[]) {
+  const list = roomList.map((room: RoomList) => {
+    delete room?.roomData?.lastMessage?.remote_address;
+    return room
   })
+
+  return list;
 }

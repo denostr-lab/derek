@@ -7,8 +7,8 @@ export const createRoom = async (room: Room) => {
   await roomModel.create(room);
 }
 
-export const findDirectRoomByRid = async (directRidList: string[], t: string) => {
-  return roomModel.findOne({ rid: { "$in": directRidList }, t });
+export const findDirectRoomByRid = async (rid: string, t: string) => {
+  return roomModel.findOne({ rid, t });
 }
 
 export const findRoomByRid = async (rid: string) => {
@@ -74,10 +74,13 @@ export const findSubscriptions = async (u: string, pagination: Pagination) => {
   return subscriptionModel.find({ u }, {}, { limit: pagination.pageSize, skip, ...sort });
 }
 
-export const findSubscriptionAggregate = async (u: string, pagination: Pagination) => {
+export const findSubscriptionAggregate = async (u: string, since: number, pagination: Pagination) => {
   const skip = pagination.pageSize * pagination.page;
   const limit = pagination.pageSize;
-  return subscriptionModel.aggregate([
+
+  console.info(`findSubscriptionAggregate u: ${u}, since: ${since}, skip: ${skip}, limit: ${limit}`)
+
+  let pipeline: any[] = [
     {
       $match: {
         u
@@ -105,5 +108,44 @@ export const findSubscriptionAggregate = async (u: string, pagination: Paginatio
     {
       $limit: limit
     }
-  ]);
+  ]
+
+  if (since) {
+    pipeline = [
+      {
+        $match: {
+          u,
+        }
+      },
+      {
+        $lookup: {
+          from: "rooms",
+          localField: "rid",
+          foreignField: "rid",
+          as: "roomData"
+        }
+      },
+      {
+        $unwind: "$roomData"
+      },
+      {
+        $match: {
+          "roomData.lastMessageTs": { $gte: since }
+        }
+      },
+      {
+        $sort: {
+          "roomData.lastMessageTs": -1
+        }
+      },
+      {
+        $skip: skip
+      },
+      {
+        $limit: limit
+      }
+    ]
+  }
+  
+  return subscriptionModel.aggregate(pipeline);
 }

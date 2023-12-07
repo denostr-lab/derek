@@ -2,6 +2,14 @@ import { CreateRoomContent } from '@/types';
 import { Room } from '@/types';
 import { eventInput } from './../schema/event.schema';
 
+/**
+ * @summary 根据指定规则生成私聊房间id
+ */
+export function generateDirectRid(inputPubkey: string, recipientPubkey: string) {
+  const uids = [inputPubkey, recipientPubkey].sort((u1, u2) => (u1).localeCompare(u2));
+  return uids.join(":");
+}
+
 
 /**
  * @summary 根据事件类型返回指定的房间类型
