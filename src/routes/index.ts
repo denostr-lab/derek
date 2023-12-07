@@ -3,12 +3,14 @@ import authRouter from './auth.route';
 import userRouter from './user.route';
 import postRouter from './post.route';
 import eventRouter from './event.route';
+import roomRouter from './room.route';
 
 function init(app: Application) {
   app.use('/api/auth', authRouter);
   app.use('/api/users', userRouter);
   app.use('/api/posts', postRouter);
   app.use('/api/events', eventRouter);
+  app.use('/api/rooms', roomRouter);
 
 }
 

@@ -7,6 +7,5 @@ export default {
   refreshTokenPublicKey: 'REFRESH_TOKEN_PUBLIC_KEY',
   mongoUrl: 'MONGO_URL',
   redisUrl: 'REDIS_URL',
-  port: 'PORT',
-
+  port: 'PORT'
 };

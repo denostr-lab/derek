@@ -47,6 +47,7 @@ export const deleteEventSchema = object({
     eventIdsToDelete: array(string()),
   }),
 });
+
 export type eventInput = TypeOf<typeof eventSchema>['body'];
 export type deleteEventInput = TypeOf<typeof deleteEventSchema>['body'];
 export type eventFiltersInput = TypeOf<typeof eventFiltersSchema>['body'];
