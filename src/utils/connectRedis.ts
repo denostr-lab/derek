@@ -32,16 +32,26 @@ redisClient.on('connect', () => {
 
 redisClient.on('error', (err) => console.log(err));
 
-export async function addDataToStream(key: string, data: string) {
-  const keyValuePairs = ['data', data];
-  console.info(`addDataToStream data: ${data}`)
-  await redisClient.xadd(key, "*", ...keyValuePairs);
+// export async function addDataToStream(key: string, data: string) {
+//   const keyValuePairs = ['data', data];
+//   console.info(`addDataToStream data: ${data}`)
+//   await redisClient.xadd(key, "*", ...keyValuePairs);
 
-  const streamLength = await redisClient.xlen(key);
-  if (streamLength > REDIS_MAX_STREAM_LENGTH) {
-    const trimLength = streamLength - REDIS_MAX_STREAM_LENGTH;
-    await redisClient.xtrim(key, "MAXLEN", "~", trimLength);
-  }
+//   const streamLength = await redisClient.xlen(key);
+//   if (streamLength > REDIS_MAX_STREAM_LENGTH) {
+//     const trimLength = streamLength - REDIS_MAX_STREAM_LENGTH;
+//     await redisClient.xtrim(key, "MAXLEN", "~", trimLength);
+//   }
+// }
+/**
+ * @summary 发布订阅
+ * @param key 
+ * @param data 
+ */
+export async function publishDataToStream(key: string, data: string[]) {
+  console.info(`publishDataToStream key: ${key}, data: `, data)
+  const result = await Promise.allSettled(data.map(item => redisClient.publish(key, item)))
+  console.info("publishDataToStream result: ", result);
 }
 
 export default redisClient;

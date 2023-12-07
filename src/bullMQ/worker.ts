@@ -1,7 +1,7 @@
 import { CreateSubscription, Subscription, StreamSubscription } from '@/types';
 import { CREATE_SUB_QUEUE_NAME, UPDATE_SUB_QUEUE_NAME, redisConnection } from '@/bullMQ/createQueue';
 import { createSubscriptions, updateRoomByRid, addSubscriptionsUnread } from '@/services/room.service';
-import { addDataToStream } from '@/utils/connectRedis';
+import { publishDataToStream } from '@/utils/connectRedis';
 import { Worker, Job } from 'bullmq';
 import config from 'config';
 
@@ -21,13 +21,13 @@ export const bullWorker = new Worker(CREATE_SUB_QUEUE_NAME, async (job: any)=> {
       return;
     }
     await createSubscriptions(data.subscriptions);
-    const items: StreamSubscription[] = [];
+    const items: string[] = [];
     (data.subscriptions || []).forEach((item: CreateSubscription) => {
       if (!item.isOwner) {
-        items.push({ p: item.u, rid: item.rid, unread: 0 })
+        items.push(item.rid)
       }
     })
-    addDataToStream("subs-stream", JSON.stringify(items))
+    publishDataToStream("roomNotice", items)
   } catch (error: any) {
     console.info("mq worker createSubscriptions error", error, "id:", id);
     throw new Error(error?.message)
@@ -72,8 +72,8 @@ export const updateSubWorker = new Worker(UPDATE_SUB_QUEUE_NAME, async (job: any
     console.info(`updateSubWorker data?.uids.lenth: ${data?.uids.length}`, 'rid: ', data?.rid);
     if (data?.uids.length > 0) {
       const newSubscriptionList = await addSubscriptionsUnread(data?.uids, data?.rid);
-      const items = newSubscriptionList.map((item: Subscription) => ({ p: item.u, rid: item.rid, unread: item.unread }));
-      addDataToStream("subs-stream", JSON.stringify(items))
+      const items = newSubscriptionList.map((item: Subscription) => item.rid);
+      publishDataToStream("roomNotice", items)
     }
   } catch (error) {
     console.info("mq updateSubWorker error", error, "id:", id);
