@@ -9,6 +9,12 @@ export type CreateSubscription = {
   rid: string;
   unread: number;
   isOwner?: boolean;
+  lastMessageTs: number;
+}
+
+export type PubSubscriptionObj = {
+  pubkey: string;
+  lastMessageTs: number;
 }
 
 export type StreamSubscription = {
@@ -38,6 +44,7 @@ export type Subscription = {
   unread: number;
   archived?: boolean;
   ts: Date;
+  lastMessageTs: number;
 }
 
 export type ModifierRoom = {

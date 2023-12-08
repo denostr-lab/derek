@@ -1,11 +1,11 @@
 // import { createClient } from 'redis';
 import Redis from 'ioredis';
 import config from 'config';
+import { PubSubscriptionObj } from '@/types';
 
 const REDIS_PORT = config.get("redisPort") as number;
 const REDIS_HOST = config.get("redisHost") as string;
 const REDIS_DB = config.get("redisDB") as number;
-const REDIS_MAX_STREAM_LENGTH = config.get("redisMaxStreamLength") as number;
 
 
 const redisClient = new Redis({
@@ -45,13 +45,18 @@ redisClient.on('error', (err) => console.log(err));
 // }
 /**
  * @summary 发布订阅
- * @param key 
  * @param data 
  */
-export async function publishDataToStream(key: string, data: string[]) {
-  console.info(`publishDataToStream key: ${key}, data: `, data)
-  const result = await Promise.allSettled(data.map(item => redisClient.publish(key, item)))
-  console.info("publishDataToStream result: ", result);
+export async function publishDataToStream(data: PubSubscriptionObj[]) {
+  console.info(`publishDataToStream data: `, data)
+  const pipeline = redisClient.pipeline();
+  data.forEach((item: PubSubscriptionObj) => {
+    console.info(`${item.pubkey}:watch`, item.lastMessageTs);
+    pipeline.set(`${item.pubkey}:watch`, item.lastMessageTs);
+  })
+  pipeline.exec((err, results) => {
+    console.info('pipeline error:', err, "results: ", results)
+  });
 }
 
 export default redisClient;

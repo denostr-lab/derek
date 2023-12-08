@@ -49,7 +49,7 @@ export const addSubscriptionsUnread = async (uids: string[], rid: string) => {
     },
     { upsert: true }
   )
-  return findSubscriptionsByRidAndU(uids, rid)
+  // return findSubscriptionsByRidAndU(uids, rid)
 }
 
 export const findSubscriptionsByRidAndU = async (uids: string[], rid: string) => {

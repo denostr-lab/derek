@@ -115,7 +115,8 @@ export const normalizeGroupRoomAndSubData = (body: eventInput, rid: string) => {
     u: item,
     rid,
     unread: 0,
-    isOwner: false
+    isOwner: false,
+    lastMessageTs: input.created_at,
   }))
 
   return { room, subscriptions, t: roomType, };

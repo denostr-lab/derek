@@ -16,6 +16,7 @@ import { CREATE_SUB_QUEUE_NAME } from "@/bullMQ/createQueue";
 import { addJob } from '@/bullMQ/addJob';
 import { Room } from '@/types';
 import { generateDirectRid, normalizeDirectRoomAndSubData, normalizeGroupRoomAndSubData } from '@/utils/normalizeData';
+import eventModel from '@/models/event.model';
 
 export const findEventsHandler = async (
   req: Request<{}, {}, eventFiltersInput>,
@@ -70,7 +71,8 @@ async function handleCreateRoom(body: eventInput) {
     u: input.pubkey,
     rid: input.id,
     unread: 0,
-    isOwner: true
+    isOwner: true,
+    lastMessageTs: room.lastMessageTs
   })
   await createRoom(room);
 
@@ -92,6 +94,13 @@ function getInputRid(body: eventInput) {
 async function handleUpdateRoom(body: eventInput) {
   const input = body.event;
   const rid =  getInputRid(body);
+
+  const event = await eventModel.findOne({ kind: input.kind, pubkey: input.pubkey });
+  // fix: kind: 41可替换会发多次，所以要确保最新时间的才会执行后续的行为
+  if (event && event.created_at >= input.created_at)  {
+   return;
+  }
+
   const dataRoom = await findRoomByRid(rid);
   if (!dataRoom) {
     throw new Error(`handleUpdateRoom findRoomByRid is empty, rid: ${rid}`)
