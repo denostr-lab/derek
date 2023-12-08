@@ -130,7 +130,7 @@ export const findSubscriptionAggregate = async (u: string, since: number, pagina
       },
       {
         $match: {
-          "roomData.lastMessageTs": { $gte: since }
+          "roomData.lastMessageTs": { $gt: since }
         }
       },
       {
