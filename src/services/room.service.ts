@@ -29,11 +29,13 @@ export const updateRoomByRid = async (rid: string, modifier: ModifierRoom) => {
 }
 
 export const createSubscriptions = async (subscriptions: CreateSubscription[]) => {
- return Promise.all(subscriptions.map((item) => subscriptionModel.create({
-  ...item,
-  archived: false,
-  ts: new Date(),
-})));
+  const list = subscriptions.map((item) => ({
+    ...item,
+    archived: false,
+    ts: new Date(),
+  }))
+
+  await subscriptionModel.insertMany(list)
 }
 
 // 这里有可能出现sub还没有创建出来的情况
