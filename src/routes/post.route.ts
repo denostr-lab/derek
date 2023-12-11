@@ -9,7 +9,7 @@ import { restrictTo } from '@/middleware/restrictTo';
 
 const router = express.Router();
 
-router.use(deserializeUser, requireUser);
+// router.use(deserializeUser, requireUser);
 
 // Admin Get Posts route
 router.get('/', restrictTo('admin'), findAllPostsHandler);

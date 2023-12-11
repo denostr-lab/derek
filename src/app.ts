@@ -6,6 +6,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from '@/utils/connectDB';
 import appRouter from "@/routes";
+import { bullWorker, updateSubWorker } from './bullMQ/worker';
+import { connectRedis } from './utils/connectRedis';
 
 const app = express();
 
@@ -66,4 +68,9 @@ app.listen(port, () => {
   console.log(`Server started on port: ${port}`);
   // 👇 call the connectDB function here
   connectDB();
+
+  connectRedis();
+
+  bullWorker.run();
+  updateSubWorker.run();
 });

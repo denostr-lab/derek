@@ -1,3 +1,4 @@
+import { UPDATE_SUB_QUEUE_NAME, createSubQueue, updateSubQueue } from '../bullMQ/createQueue';
 import { NextFunction, Request, Response } from "express";
 import {
   eventInput,
@@ -10,6 +11,12 @@ import {
   findBySubscriptionFilter,
   deleteEventsByIdAnyPubKey,
 } from "@/services/event.service";
+import { createRoom, findDirectRoomByRid, findRoomByRid, replaceRoomByRid } from "@/services/room.service";
+import { CREATE_SUB_QUEUE_NAME } from "@/bullMQ/createQueue";
+import { addJob } from '@/bullMQ/addJob';
+import { Room } from '@/types';
+import { generateDirectRid, normalizeDirectRoomAndSubData, normalizeGroupRoomAndSubData } from '@/utils/normalizeData';
+import eventModel from '@/models/event.model';
 
 export const findEventsHandler = async (
   req: Request<{}, {}, eventFiltersInput>,
@@ -30,6 +37,108 @@ export const findEventsHandler = async (
   }
 };
 
+async function handleKind4Room(body: eventInput) {
+  const input = body.event;
+  const tags = input?.tags || [[]];
+  const tagItem = (tags || []).find(item => item[0] === "p")
+  if (!tagItem?.[1]) {
+    throw new Error(`handleKind4Room recipient pubkey is empty, tagItem: ${tagItem}`)
+  }
+  console.info(`handleKind4Room kind: ${input.kind}, tagItem:`, tagItem, "tags: ", tags);
+  const inputPubkey = input.pubkey;
+  const recipientPubkey = tagItem[1] as string;
+
+  const rid = generateDirectRid(inputPubkey, recipientPubkey);
+  const existRoom = await findDirectRoomByRid(rid, "d");
+  console.info(`findDirectRoomByRid rid: ${rid} existRoom: `, existRoom);
+  const { room, subscriptions } = normalizeDirectRoomAndSubData(body, rid);
+  if (!existRoom) {
+    await createRoom(room);
+    addJob(createSubQueue, CREATE_SUB_QUEUE_NAME, { subscriptions });
+    return
+  }
+  const recipientPubkeys = existRoom.uids.filter(item => item !== inputPubkey)
+  addJob(updateSubQueue, UPDATE_SUB_QUEUE_NAME, { uids: recipientPubkeys, rid: existRoom.rid, lastMessage: input });
+}
+
+async function handleCreateRoom(body: eventInput) {
+  const input = body.event;
+  let rid =  input.id;
+  const { room, subscriptions, t } = normalizeGroupRoomAndSubData(body, rid);
+  // own 的 subscription
+  subscriptions.unshift({
+    t,
+    u: input.pubkey,
+    rid: input.id,
+    unread: 0,
+    isOwner: true,
+    lastMessageTs: room.lastMessageTs
+  })
+  await createRoom(room);
+
+  addJob(createSubQueue, CREATE_SUB_QUEUE_NAME, { subscriptions });
+}
+
+function getInputRid(body: eventInput) {
+  const input = body.event;
+  let rid =  input.id;
+  const tags = input?.tags || [[]];
+  const tagItem = (tags || []).find(item => item[0] === "e")
+  console.info(`kind: ${input.kind}, tagItem:`, tagItem, "tags: ", tags);
+  if (tagItem?.[1]) {
+    rid = tagItem[1];
+  }
+  return rid;
+}
+
+async function handleUpdateRoom(body: eventInput) {
+  const input = body.event;
+  const rid =  getInputRid(body);
+
+  const event = await eventModel.findOne({ kind: input.kind, pubkey: input.pubkey });
+  // fix: kind: 41可替换会发多次，所以要确保最新时间的才会执行后续的行为
+  if (event && event.created_at >= input.created_at)  {
+   return;
+  }
+
+  const dataRoom = await findRoomByRid(rid);
+  if (!dataRoom) {
+    throw new Error(`handleUpdateRoom findRoomByRid is empty, rid: ${rid}`)
+  }
+  if (dataRoom.u !== input.pubkey) {
+    throw new Error(`handleUpdateRoom Not the owner of the room, key: ${input.pubkey}, room key: ${dataRoom.u}`)
+  }
+  const { room, subscriptions } = normalizeGroupRoomAndSubData(body, rid);
+  await replaceRoomByRid(rid, room);
+
+  const dataRoomUids = dataRoom.uids;
+  const newSubscriptions = subscriptions.filter(item => !dataRoomUids.includes(item.u))
+
+  addJob(createSubQueue, CREATE_SUB_QUEUE_NAME, { subscriptions: newSubscriptions });
+}
+
+async function handleGroupMessage(body: eventInput) {
+  const input = body.event;
+  const rid =  getInputRid(body);
+  const dataRoom = await findRoomByRid(rid);
+  if (!dataRoom) {
+    throw new Error(`handleUpdateRoom findRoomByRid is empty, rid: ${rid}`)
+  }
+  if (!dataRoom.uids.includes(input.pubkey)) {
+    throw new Error(`handleUpdateRoom Not a group member, key: ${input.pubkey}, room key: ${dataRoom.uids}`)
+  }
+
+  const uids = dataRoom.uids.filter(item => item !== input.pubkey);
+  addJob(updateSubQueue, UPDATE_SUB_QUEUE_NAME, { uids, rid, lastMessage: input });
+}
+
+const handlers: Record<number, (args: eventInput) => void> =  {
+  4: (args: eventInput) => handleKind4Room(args),
+  40: (args: eventInput) => handleCreateRoom(args),
+  41: (args: eventInput) => handleUpdateRoom(args),
+  42: (args: eventInput) => handleGroupMessage(args)
+}
+
 export const saveEventHandler = async (
   req: Request<{}, {}, eventInput>,
   res: Response,
@@ -44,8 +153,20 @@ export const saveEventHandler = async (
       (kind >= 10000 && kind < 20000) ||
       (kind >= 30000 && kind <= 40000)
     ) {
+      
+      if (handlers.hasOwnProperty(kind)) {
+        const eventHandler = handlers[kind];
+        await eventHandler(req.body);
+      }
+
       handleRes = await replaceEvent(req.body.event);
     } else {
+
+      if (handlers.hasOwnProperty(kind)) {
+        const eventHandler = handlers[kind];
+        await eventHandler(req.body);
+      }
+
       handleRes = await insertEvent(req.body.event);
     }
     res.status(200).json({
