@@ -8,5 +8,4 @@ export default {
   mongoUrl: 'MONGO_URL',
   redisUrl: 'REDIS_URL',
   port: 'PORT',
-
 };

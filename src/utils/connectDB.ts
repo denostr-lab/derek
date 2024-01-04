@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 import config from 'config';
 
 const dbUrl = config.get('mongoUrl') as string;
-console.info(dbUrl, 'dbUrl')
 const connectDB = async () => {
   try {
     await mongoose.connect(dbUrl);

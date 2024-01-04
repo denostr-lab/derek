@@ -1,7 +1,7 @@
 {
-  "name": "node-mongo-rest-api",
+  "name": "eventstore",
   "version": "0.0.1-dev",
-  "main": "index.js",
+  "private": "true",
   "license": "MIT",
   "scripts": {
     "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/app.ts",
